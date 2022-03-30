@@ -8,248 +8,31 @@ class Set {
   private:
     struct Node {
         T key;
-        size_t height;
-        Node* left_son;
-        Node* right_son;
-        Node* parent;
-        bool is_end;
+        size_t height = 1;
+        Node* left_son = nullptr;
+        Node* right_son = nullptr;
+        Node* parent = nullptr;
+        bool is_end = false;
 
         Node(T k, Node* par) {
             key = k;
-            left_son = nullptr;
-            right_son = nullptr;
             parent = par;
-            is_end = false;
-            height = 1;
         }
 
         explicit Node(Node* par) {
-            left_son = nullptr;
-            right_son = nullptr;
             parent = par;
             is_end = true;
-            height = 1;
         }
 
     };
-    // Returns height of a tree vertex.
-    size_t GetHeight(Node* v) const {
-        if (v != nullptr) {
-            return v->height;
-        }
-        return 0;
-    }
-    // Returns balance factor of a tree vertex.
 
-    int32_t GetBalance(Node* v) const {
-        if (v != nullptr) {
-            return GetHeight(v->left_son) - GetHeight(v->right_son);
-        }
-        return 0;
-    }
-    // Fixes height field of a vertex, if it is not correct.
-    void FixHeight(Node* v) {
-        if (v != nullptr) {
-            v->height = std::max(GetHeight(v->left_son), GetHeight(v->right_son)) + 1;
-        }
-    }
-    // Next two methods implement right and left_son rotation of a vertex to rebalance the tree. Complexity O(1).
-    Node* RightRotation(Node* v) {
-        Node* q = v->left_son;
-        v->left_son = q->right_son;
-        if (v->left_son != nullptr) {
-            v->left_son->parent = v;
-        }
-        q->right_son = v;
-        q->parent = v->parent;
-        v->parent = q;
-        FixHeight(v);
-        FixHeight(q);
-        return q;
-    }
-    Node* LeftRotation(Node* v) {
-        Node* q = v->right_son;
-        v->right_son = q->left_son;
-        if (v->right_son != nullptr) {
-            v->right_son->parent = v;
-        }
-        q->left_son = v;
-        q->parent = v->parent;
-        v->parent = q;
-        FixHeight(v);
-        FixHeight(q);
-        return q;
-    }
-    // Fixes the tree if the current vertex needs to be rebalanced. Complexity O(1).
-    Node* FixBalance(Node* v) {
-        if (v == nullptr) {
-            return nullptr;
-        }
-        FixHeight(v);
-        if (GetBalance(v) == -2) {
-            if (GetBalance(v->right_son) > 0) {
-                v->right_son = RightRotation(v->right_son);
-            }
-            v = LeftRotation(v);
-            return v;
-        }
-        if (GetBalance(v) == 2) {
-            if (GetBalance(v->left_son) < 0) {
-                v->left_son = LeftRotation(v->left_son);
-            }
-            v = RightRotation(v);
-            return v;
-        }
-        return v;
-    }
-    // Inserts a new element into the tree. Complexity O(log n).
-    Node* Insert(Node* v, const T& k, Node* parent) {
-        if (v == nullptr) {
-            return new Node(k, parent);
-        }
-        if (v->is_end || k < v->key) {
-            v->left_son = Insert(v->left_son, k, v);
-        } else {
-            v->right_son = Insert(v->right_son, k, v);
-        }
-        v = FixBalance(v);
-        return v;
-    }
-    // Finds minimal element in the subtree of a current vertex. Complexity O(log n).
-    Node* FindMin(Node* v) const {
-        if (v->left_son == nullptr) {
-            return v;
-        } else {
-            return FindMin(v->left_son);
-        }
-    }
-    // Finds maximal element in the subtree of a current vertex. Complexity O(log n).
-    Node* FindEnd(Node* v) const {
-        if (v->right_son == nullptr) {
-            return v;
-        } else {
-            return FindEnd(v->right_son);
-        }
-    }
-    // Erases minimal element in the subtree of the current vertex. Complexity O(log n).
-    Node* EraseMin(Node* v) {
-        if (v->left_son == nullptr) {
-            if (v->right_son != nullptr) {
-                v->right_son->parent = v->parent;
-            }
-            return v->right_son;
-        }
-        v->left_son = EraseMin(v->left_son);
-        v = FixBalance(v);
-        return v;
-    }
-    // Erases vertex in the tree with the given key value or
-    // does nothing if such vertex does not exist. Complexity O(log n).
-    Node* Erase(Node* v, const T& k) {
-        if (v == nullptr) {
-            return nullptr;
-        }
-        if (v->is_end || k < v->key) {
-            v->left_son = Erase(v->left_son, k);
-        } else if (v->key < k) {
-            v->right_son = Erase(v->right_son, k);
-        } else {
-            Node* l = v->left_son;
-            Node* r = v->right_son;
-            if (r == nullptr) {
-                if (l != nullptr) {
-                    l->parent = v->parent;
-                }
-                delete v;
-                return l;
-            }
-            Node* minn = FindMin(r);
-            minn->right_son = EraseMin(r);
-            minn->parent = v->parent;
-            delete v;
-            minn->left_son = l;
-            if (minn->left_son != nullptr) {
-                minn->left_son->parent = minn;
-            }
-            if (minn->right_son != nullptr) {
-                minn->right_son->parent = minn;
-            }
-            minn = FixBalance(minn);
-            return minn;
-        }
-        v = FixBalance(v);
-        return v;
-    }
-    // Finds a vertex with the given key value or returns nullptr if such vertex does not exist. Complexity O(log n).
-    Node* Find(Node* v, const T& k) const {
-        if (v == nullptr) {
-            return nullptr;
-        }
-        if (v->is_end) {
-            if (v->left_son != nullptr && !(v->left_son->key < k) && !(k < v->left_son->key)) {
-                return v->left_son;
-            } else {
-                return nullptr;
-            }
-        }
-        if (k < v->key) {
-            return Find(v->left_son, k);
-        } else if (v->key < k) {
-            return Find(v->right_son, k);
-        }
-        return v;
-
-    }
-    // Finds a vertex with the minimal value more or equal to the given key value. Complexity O(log n).
-    Node* LowerBound(Node* v, Node* par, const T& k) const {
-        if (v == nullptr) {
-            return par;
-        }
-        if (v->is_end) {
-            if (v->left_son != nullptr && !(v->left_son->key < k)) {
-                return v->left_son;
-            }
-            return v;
-        }
-        if (k < v->key) {
-            return LowerBound(v->left_son, v, k);
-        } else if (v->key < k) {
-            return LowerBound(v->right_son, v, k);
-        }
-        return v;
-    }
-    // Deallocates the memory of the whole tree.
-    void DestroySet(Node* v) {
-        if (v == nullptr) {
-            return;
-        }
-        DestroySet(v->left_son);
-        DestroySet(v->right_son);
-        delete v;
-    }
-    // Creates a deep copy of a given tree.
-    Node* CopyNode(Node* v, Node* par) {
-        if (v == nullptr) {
-            return nullptr;
-        }
-        if (v->is_end) {
-            Node* n = new Node(par);
-            n->left_son = CopyNode(v->left_son, n);
-            return n;
-        }
-        Node* n = new Node(v->key, par);
-        n->left_son = CopyNode(v->left_son, n);
-        n->right_son = CopyNode(v->right_son, n);
-        return n;
-    }
-
-public:
+  public:
 
     // Iterator class for the set, using pointer to const Node to operate.
     // Supports the similar methods as the STL set iterator.
 
     class iterator {
-    public:
+      public:
         iterator() = default;
 
         explicit iterator(Node* v) : it_(v) {}
@@ -378,7 +161,7 @@ public:
             return &(it_->key);
         }
 
-    private:
+      private:
         const Node* it_;
     };
 
@@ -431,11 +214,11 @@ public:
         DestroySet(root_);
     }
     // Returns the number of elements in the set.
-    [[nodiscard]] size_t size() const {
+    size_t size() const {
         return size_;
     }
     // Returns true if the set is empty.
-    [[nodiscard]] bool empty() const {
+    bool empty() const {
         return size_ == 0;
     }
     // Returns an iterator to the element with the given key or past-the-end iterator if no such element is found.
@@ -471,8 +254,217 @@ public:
         }
         return iter;
     }
+  private:
+    // Returns height of a tree vertex.
+    size_t GetHeight(Node* v) const {
+        if (v != nullptr) {
+            return v->height;
+        }
+        return 0;
+    }
+    // Returns balance factor of a tree vertex.
+    int32_t GetBalance(Node* v) const {
+        if (v != nullptr) {
+            return GetHeight(v->left_son) - GetHeight(v->right_son);
+        }
+        return 0;
+    }
+    // Fixes height field of a vertex, if it is not correct.
+    void FixHeight(Node* v) {
+        if (v != nullptr) {
+            v->height = std::max(GetHeight(v->left_son), GetHeight(v->right_son)) + 1;
+        }
+    }
+    // Next two methods implement right and left_son rotation of a vertex to rebalance the tree. Complexity O(1).
+    Node* RightRotation(Node* v) {
+        Node* q = v->left_son;
+        v->left_son = q->right_son;
+        if (v->left_son != nullptr) {
+            v->left_son->parent = v;
+        }
+        q->right_son = v;
+        q->parent = v->parent;
+        v->parent = q;
+        FixHeight(v);
+        FixHeight(q);
+        return q;
+    }
+    Node* LeftRotation(Node* v) {
+        Node* q = v->right_son;
+        v->right_son = q->left_son;
+        if (v->right_son != nullptr) {
+            v->right_son->parent = v;
+        }
+        q->left_son = v;
+        q->parent = v->parent;
+        v->parent = q;
+        FixHeight(v);
+        FixHeight(q);
+        return q;
+    }
+    // Fixes the tree if the current vertex needs to be rebalanced. Complexity O(1).
+    Node* FixBalance(Node* v) {
+        if (v == nullptr) {
+            return nullptr;
+        }
+        FixHeight(v);
+        if (GetBalance(v) == -2) {
+            if (GetBalance(v->right_son) > 0) {
+                v->right_son = RightRotation(v->right_son);
+            }
+            v = LeftRotation(v);
+            return v;
+        }
+        if (GetBalance(v) == 2) {
+            if (GetBalance(v->left_son) < 0) {
+                v->left_son = LeftRotation(v->left_son);
+            }
+            v = RightRotation(v);
+            return v;
+        }
+        return v;
+    }
+    // Inserts a new element into the tree. Complexity O(log n).
+    Node* Insert(Node* v, const T& k, Node* parent) {
+        if (v == nullptr) {
+            return new Node(k, parent);
+        }
+        if (v->is_end || k < v->key) {
+            v->left_son = Insert(v->left_son, k, v);
+        } else {
+            v->right_son = Insert(v->right_son, k, v);
+        }
+        v = FixBalance(v);
+        return v;
+    }
+    // Finds minimal element in the subtree of a current vertex. Complexity O(log n).
+    Node* FindMin(Node* v) const {
+        if (v->left_son == nullptr) {
+            return v;
+        } else {
+            return FindMin(v->left_son);
+        }
+    }
+    // Finds maximal element in the subtree of a current vertex. Complexity O(log n).
+    Node* FindEnd(Node* v) const {
+        if (v->right_son == nullptr) {
+            return v;
+        } else {
+            return FindEnd(v->right_son);
+        }
+    }
+    // Erases minimal element in the subtree of the current vertex. Complexity O(log n).
+    Node* EraseMin(Node* v) {
+        if (v->left_son == nullptr) {
+            if (v->right_son != nullptr) {
+                v->right_son->parent = v->parent;
+            }
+            return v->right_son;
+        }
+        v->left_son = EraseMin(v->left_son);
+        v = FixBalance(v);
+        return v;
+    }
+    // Erases vertex in the tree with the given key value or
+    // does nothing if such vertex does not exist. Complexity O(log n).
+    Node* Erase(Node* v, const T& k) {
+        if (v == nullptr) {
+            return nullptr;
+        }
+        if (v->is_end || k < v->key) {
+            v->left_son = Erase(v->left_son, k);
+        } else if (v->key < k) {
+            v->right_son = Erase(v->right_son, k);
+        } else {
+            Node* l = v->left_son;
+            Node* r = v->right_son;
+            if (r == nullptr) {
+                if (l != nullptr) {
+                    l->parent = v->parent;
+                }
+                delete v;
+                return l;
+            }
+            Node* minnode = FindMin(r);
+            minnode->right_son = EraseMin(r);
+            minnode->parent = v->parent;
+            delete v;
+            minnode->left_son = l;
+            if (minnode->left_son != nullptr) {
+                minnode->left_son->parent = minnode;
+            }
+            if (minnode->right_son != nullptr) {
+                minnode->right_son->parent = minnode;
+            }
+            minnode = FixBalance(minnode);
+            return minnode;
+        }
+        v = FixBalance(v);
+        return v;
+    }
+    // Finds a vertex with the given key value or returns nullptr if such vertex does not exist. Complexity O(log n).
+    Node* Find(Node* v, const T& k) const {
+        if (v == nullptr) {
+            return nullptr;
+        }
+        if (v->is_end) {
+            if (v->left_son != nullptr && !(v->left_son->key < k) && !(k < v->left_son->key)) {
+                return v->left_son;
+            } else {
+                return nullptr;
+            }
+        }
+        if (k < v->key) {
+            return Find(v->left_son, k);
+        } else if (v->key < k) {
+            return Find(v->right_son, k);
+        }
+        return v;
 
-private:
+    }
+    // Finds a vertex with the minimal value more or equal to the given key value. Complexity O(log n).
+    Node* LowerBound(Node* v, Node* par, const T& k) const {
+        if (v == nullptr) {
+            return par;
+        }
+        if (v->is_end) {
+            if (v->left_son != nullptr && !(v->left_son->key < k)) {
+                return v->left_son;
+            }
+            return v;
+        }
+        if (k < v->key) {
+            return LowerBound(v->left_son, v, k);
+        } else if (v->key < k) {
+            return LowerBound(v->right_son, v, k);
+        }
+        return v;
+    }
+    // Deallocates the memory of the whole tree.
+    void DestroySet(Node* v) {
+        if (v == nullptr) {
+            return;
+        }
+        DestroySet(v->left_son);
+        DestroySet(v->right_son);
+        delete v;
+    }
+    // Creates a deep copy of a given tree.
+    Node* CopyNode(Node* v, Node* par) {
+        if (v == nullptr) {
+            return nullptr;
+        }
+        if (v->is_end) {
+            Node* n = new Node(par);
+            n->left_son = CopyNode(v->left_son, n);
+            return n;
+        }
+        Node* n = new Node(v->key, par);
+        n->left_son = CopyNode(v->left_son, n);
+        n->right_son = CopyNode(v->right_son, n);
+        return n;
+    }
+  private:
     Node* root_;
     size_t size_;
     Node* end_;
