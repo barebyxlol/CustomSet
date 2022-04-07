@@ -5,7 +5,7 @@
 
 template<class T>
 class Set {
-  private:
+private:
     struct Node {
         T key;
         size_t height = 1;
@@ -13,32 +13,23 @@ class Set {
         Node* right_son = nullptr;
         Node* parent = nullptr;
         bool is_end = false;
-
         Node(T k, Node* par) {
             key = k;
             parent = par;
         }
-
         explicit Node(Node* par) {
             parent = par;
             is_end = true;
         }
-
     };
-
-  public:
-
+public:
     // Iterator class for the set, using pointer to const Node to operate.
     // Supports the similar methods as the STL set iterator.
-
     class iterator {
-      public:
+    public:
         iterator() = default;
-
         explicit iterator(Node* v) : it_(v) {}
-
         iterator(const iterator& iter) : it_(iter.it_) {}
-
         iterator& operator=(const iterator& iter) {
             if (this == &iter) {
                 return *this;
@@ -46,11 +37,9 @@ class Set {
             it_ = iter.it_;
             return *this;
         }
-
         bool operator==(const iterator& iter) const {
             return it_ == iter.it_;
         }
-
         bool operator!=(const iterator& iter) const {
             return it_ != iter.it_;
         }
@@ -64,46 +53,29 @@ class Set {
             }
             if (it_->right_son != nullptr) {
                 it_ = it_->right_son;
-                while (it_->left_son != nullptr) {
-                    it_ = it_->left_son;
-                }
+                it_ = GetLeftmost(it_);
                 return *this;
             }
             T t = it_->key;
-            while (!it_->is_end && !(t < it_->key) && it_->parent != nullptr) {
-                it_ = it_->parent;
-            }
+            it_ = GetGreaterParent(it_, t);
             return *this;
         }
         iterator& operator--() {
             if (it_->is_end) {
-                if (it_->left_son != nullptr) {
-                    it_ = it_->left_son;
-                } else {
-                    it_ = it_->parent;
-                }
+                it_ = DecreaseEnd(it_);
                 return *this;
             }
             if (it_->left_son != nullptr) {
                 it_ = it_->left_son;
-                while (it_->right_son != nullptr) {
-                    it_ = it_->right_son;
-                }
+                it_ = GetRightmost(it_);
                 return *this;
             }
             T t = it_->key;
             if (it_->parent == nullptr) {
                 return *this;
             }
-            if (it_->parent->is_end) {
-                if (it_->parent->parent == nullptr) {
-                    return *this;
-                }
-                it_ = it_->parent->parent;
-            }
-            while (!(it_->key < t) && it_->parent != nullptr) {
-                it_ = it_->parent;
-            }
+            it_ = HopEndParent(it_);
+            it_ = GetLesserParent(it_, t);
             return *this;
         }
         iterator& operator++(int) {
@@ -112,59 +84,81 @@ class Set {
             }
             if (it_->right_son != nullptr) {
                 it_ = it_->right_son;
-                while (it_->left_son != nullptr) {
-                    it_ = it_->left_son;
-                }
+                it_ = GetLeftmost(it_);
                 return *this;
             }
             T t = it_->key;
-            while (!(t < it_->key) && it_->parent != nullptr) {
-                it_ = it_->parent;
-            }
+            it_ = GetGreaterParent(it_, t);
             return *this;
         }
         iterator& operator--(int) {
             if (it_->is_end) {
-                if (it_->left_son != nullptr) {
-                    it_ = it_->left_son;
-                } else {
-                    it_ = it_->parent;
-                }
+                it_ = DecreaseEnd(it_);
                 return *this;
             }
             if (it_->left_son != nullptr) {
                 it_ = it_->left_son;
-                while (it_->right_son != nullptr) {
-                    it_ = it_->right_son;
-                }
+                it_ = GetRightmost(it_);
                 return *this;
             }
             T t = it_->key;
             if (it_->parent == nullptr) {
                 return *this;
             }
-            if (it_->parent->is_end) {
-                if (it_->parent->parent == nullptr) {
-                    return *this;
-                }
-                it_ = it_->parent->parent;
-            }
-            while (!(it_->key < t) && it_->parent != nullptr) {
-                it_ = it_->parent;
-            }
+            it_ = HopEndParent(it_);
+            it_ = GetLesserParent(it_, t);
             return *this;
         }
         T operator*() const {
             return it_->key;
         }
-        const T *operator->() const {
+        const T* operator->() const {
             return &(it_->key);
         }
-
-      private:
+    private:
+        const Node* DecreaseEnd(const Node* v){
+            if (v->left_son != nullptr) {
+                return v->left_son;
+            } else {
+                return v->parent;
+            }
+        }
+        const Node* GetRightmost(const Node* v){
+            while (v->right_son != nullptr) {
+                v = v->right_son;
+            }
+            return v;
+        }
+        const Node* GetLeftmost(const Node* v){
+            while (v->left_son != nullptr) {
+                v = v->left_son;
+            }
+            return v;
+        }
+        const Node* HopEndParent(const Node* v){
+            if (v->parent->is_end) {
+                if (v->parent->parent == nullptr) {
+                    return v;
+                }
+                v = v->parent->parent;
+            }
+            return v;
+        }
+        const Node* GetGreaterParent(const Node* v, const T& t){
+            while (!v->is_end && !(t < v->key) && v->parent != nullptr) {
+                v = v->parent;
+            }
+            return v;
+        }
+        const Node* GetLesserParent(const Node* v, const T& t){
+            while (!v->is_end && !(v->key < t) && v->parent != nullptr) {
+                v = v->parent;
+            }
+            return v;
+        }
+    private:
         const Node* it_;
     };
-
     // Default set constructor.
     Set() {
         root_ = new Node(nullptr);
@@ -254,7 +248,7 @@ class Set {
         }
         return iter;
     }
-  private:
+private:
     // Returns height of a tree vertex.
     size_t GetHeight(Node* v) const {
         if (v != nullptr) {
@@ -464,8 +458,8 @@ class Set {
         n->right_son = CopyNode(v->right_son, n);
         return n;
     }
-  private:
-    Node* root_;
-    size_t size_;
-    Node* end_;
+private:
+    Node* root_ = nullptr;
+    size_t size_ = 0;
+    Node* end_ = nullptr;
 };
